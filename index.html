@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Project Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 text-blue-600">Multi-Agent Project Manager</h1>
+        
+        <!-- Panel de Control -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Proyecto 1 -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-2 text-purple-600">ConsorcioOpt</h2>
+                <p class="text-gray-600 mb-4">Optimización de Administración</p>
+                <div class="space-y-2">
+                    <p><strong>Agente:</strong> OptimizadorConsorcio</p>
+                    <p><strong>Personalidad:</strong> Analítico, Eficiente</p>
+                    <button onclick="viewProject('ConsorcioOpt')" class="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600">Ver Tareas</button>
+                </div>
+            </div>
+            
+            <!-- Proyecto 2 -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-2 text-green-600">SocialConsorcio</h2>
+                <p class="text-gray-600 mb-4">Redes Sociales - Administración</p>
+                <div class="space-y-2">
+                    <p><strong>Agente:</strong> SocialManagerConsorcio</p>
+                    <p><strong>Personalidad:</strong> Creativo, Comunicativo</p>
+                    <button onclick="viewProject('SocialConsorcio')" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Ver Tareas</button>
+                </div>
+            </div>
+            
+            <!-- Proyecto 3 -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-2 text-orange-600">SocialEmprendedores</h2>
+                <p class="text-gray-600 mb-4">Redes Sociales - Emprendedores</p>
+                <div class="space-y-2">
+                    <p><strong>Agente:</strong> MentorEmprendedor</p>
+                    <p><strong>Personalidad:</strong> Inspirador, Educativo</p>
+                    <button onclick="viewProject('SocialEmprendedores')" class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600">Ver Tareas</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Crear Nueva Tarea -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Crear Nueva Tarea</h2>
+            <form id="taskForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Proyecto</label>
+                    <select id="project" class="w-full border rounded px-3 py-2">
+                        <option value="ConsorcioOpt">ConsorcioOpt - Optimización</option>
+                        <option value="SocialConsorcio">SocialConsorcio - Redes Administración</option>
+                        <option value="SocialEmprendedores">SocialEmprendedores - Redes Emprendedores</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Título</label>
+                    <input type="text" id="title" class="w-full border rounded px-3 py-2" placeholder="Título de la tarea" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Descripción</label>
+                    <textarea id="description" class="w-full border rounded px-3 py-2" rows="4" placeholder="Descripción detallada" required></textarea>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Prioridad</label>
+                    <select id="priority" class="w-full border rounded px-3 py-2">
+                        <option value="low">Baja</option>
+                        <option value="medium" selected>Media</option>
+                        <option value="high">Alta</option>
+                        <option value="urgent">Urgente</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 font-bold">Crear Tarea</button>
+            </form>
+        </div>
+        
+        <!-- Lista de Tareas -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-4">Tareas Recientes</h2>
+            <div id="tasksList" class="space-y-4">
+                <p class="text-gray-500">Cargando tareas...</p>
+            </div>
+        </div>
+        
+        <!-- Reporte del Sistema -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mt-8">
+            <h2 class="text-2xl font-bold mb-4">Reporte del Sistema</h2>
+            <div id="systemReport" class="space-y-2">
+                <p class="text-gray-500">Cargando reporte...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000';
+        
+        // Cargar tareas al inicio
+        loadTasks();
+        loadSystemReport();
+        
+        // Recargar cada 30 segundos
+        setInterval(() => {
+            loadTasks();
+            loadSystemReport();
+        }, 30000);
+        
+        // Formulario de crear tarea
+        document.getElementById('taskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const task = {
+                project: document.getElementById('project').value,
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                priority: document.getElementById('priority').value
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/api/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(task)
+                });
+                
+                if (response.ok) {
+                    alert('Tarea creada exitosamente!');
+                    document.getElementById('taskForm').reset();
+                    loadTasks();
+                } else {
+                    alert('Error al crear tarea');
+                }
+            } catch (error) {
+                alert('Error de conexión: ' + error.message);
+            }
+        });
+        
+        // Cargar todas las tareas
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_URL}/api/tasks`);
+                const tasks = await response.json();
+                
+                const tasksList = document.getElementById('tasksList');
+                
+                if (tasks.length === 0) {
+                    tasksList.innerHTML = '<p class="text-gray-500">No hay tareas todavía</p>';
+                    return;
+                }
+                
+                tasksList.innerHTML = tasks.map(task => `
+                    <div class="border rounded p-4 ${getStatusColor(task.status)}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg">${task.title}</h3>
+                                <p class="text-gray-600 text-sm mb-2">${task.description}</p>
+                                <div class="flex gap-2 flex-wrap">
+                                    <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">${task.project}</span>
+                                    <span class="px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}">${task.priority}</span>
+                                    <span class="px-2 py-1 rounded text-xs ${getStatusBadgeColor(task.status)}">${task.status}</span>
+                                    ${task.assigned_agent ? `<span class="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">${task.assigned_agent}</span>` : ''}
+                                </div>
+                            </div>
+                            <button onclick="deleteTask('${task.id}')" class="ml-4 text-red-500 hover:text-red-700">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('tasksList').innerHTML = '<p class="text-red-500">Error al cargar tareas</p>';
+            }
+        }
+        
+        // Cargar reporte del sistema
+        async function loadSystemReport() {
+            try {
+                const response = await fetch(`${API_URL}/api/coordinate/report`);
+                const report = await response.json();
+                
+                const reportDiv = document.getElementById('systemReport');
+                reportDiv.innerHTML = `
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-blue-600">${report.total_tasks}</p>
+                            <p class="text-gray-600">Total Tareas</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-green-600">${report.tasks_by_status?.completed || 0}</p>
+                            <p class="text-gray-600">Completadas</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-yellow-600">${report.tasks_by_status?.in_progress || 0}</p>
+                            <p class="text-gray-600">En Progreso</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-gray-600">${report.tasks_by_status?.pending || 0}</p>
+                            <p class="text-gray-600">Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t">
+                        <h3 class="font-bold mb-2">Tareas por Proyecto:</h3>
+                        <ul class="space-y-1">
+                            ${Object.entries(report.tasks_by_project || {}).map(([project, count]) => 
+                                `<li>• ${project}: <strong>${count}</strong> tareas</li>`
+                            ).join('')}
+                        </ul>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('systemReport').innerHTML = '<p class="text-red-500">Error al cargar reporte</p>';
+            }
+        }
+        
+        // Ver tareas de un proyecto
+        async function viewProject(project) {
+            try {
+                const response = await fetch(`${API_URL}/api/projects/${project}/tasks`);
+                const tasks = await response.json();
+                
+                alert(`Proyecto: ${project}\nTareas: ${tasks.length}\n\n${tasks.map(t => `• ${t.title} (${t.status})`).join('\n')}`);
+            } catch (error) {
+                alert('Error al cargar proyecto');
+            }
+        }
+        
+        // Eliminar tarea
+        async function deleteTask(taskId) {
+            if (!confirm('¿Seguro que quieres eliminar esta tarea?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadTasks();
+                } else {
+                    alert('Error al eliminar tarea');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+        
+        // Funciones auxiliares de colores
+        function getStatusColor(status) {
+            const colors = {
+                'pending': 'bg-gray-50',
+                'in_progress': 'bg-yellow-50',
+                'completed': 'bg-green-50',
+                'blocked': 'bg-red-50'
+            };
+            return colors[status] || 'bg-white';
+        }
+        
+        function getStatusBadgeColor(status) {
+            const colors = {
+                'pending': 'bg-gray-200 text-gray-800',
+                'in_progress': 'bg-yellow-200 text-yellow-800',
+                'completed': 'bg-green-200 text-green-800',
+                'blocked': 'bg-red-200 text-red-800'
+            };
+            return colors[status] || 'bg-gray-200 text-gray-800';
+        }
+        
+        function getPriorityColor(priority) {
+            const colors = {
+                'low': 'bg-blue-100 text-blue-800',
+                'medium': 'bg-yellow-100 text-yellow-800',
+                'high': 'bg-orange-100 text-orange-800',
+                'urgent': 'bg-red-100 text-red-800'
+            };
+            return colors[priority] || 'bg-gray-100 text-gray-800';
+        }
+    </script>
+</body>
+</html>
